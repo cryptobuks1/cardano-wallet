@@ -51,6 +51,7 @@ import Cardano.Wallet.Api
     , Proxy_
     , SMASH
     , Settings
+    , SharedWallets
     , ShelleyMigrations
     , StakePools
     , Transactions
@@ -176,7 +177,14 @@ import Data.Text.Class
 import Network.Ntp
     ( NtpClient )
 import Servant
-    ( (:<|>) (..), Handler (..), NoContent (..), Server, err400 )
+    ( (:<|>) (..)
+    , Handler (..)
+    , NoContent (..)
+    , Server
+    , err400
+    , err501
+    , throwError
+    )
 import Servant.Server
     ( ServerError (..) )
 import Type.Reflection
@@ -222,6 +230,7 @@ server byron icarus shelley spl ntp =
     :<|> proxy
     :<|> settingS
     :<|> smash
+    :<|> shareWallets
   where
     wallets :: Server Wallets
     wallets = deleteWallet shelley
@@ -480,6 +489,9 @@ server byron icarus shelley spl ntp =
             case poolMetadataSource settings' of
                 FetchSMASH smashServer -> getHealth smashServer
                 _ -> pure (ApiHealthCheck NoSmashConfigured)
+
+    shareWallets :: Server SharedWallets
+    shareWallets = pure $ throwError err501
 
 postAnyAddress
     :: NetworkId

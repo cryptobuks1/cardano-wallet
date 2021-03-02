@@ -114,6 +114,10 @@ module Cardano.Wallet.Api
     , SMASH
         , GetCurrentSMASHHealth
 
+      -- * Shelley
+    , SharedWallets
+        , PostSharedWallet
+
     , Proxy_
         , PostExternalTransaction
 
@@ -154,6 +158,8 @@ import Cardano.Wallet.Api.Types
     , ApiPostRandomAddressData
     , ApiPutAddressesDataT
     , ApiSelectCoinsDataT
+    , ApiSharedWallet
+    , ApiSharedWalletPostData
     , ApiT
     , ApiTransactionT
     , ApiTxId
@@ -243,8 +249,6 @@ import qualified Cardano.Wallet.Primitive.Types as W
 type ApiV2 n apiPool = "v2" :> Api n apiPool
 
 -- | The full cardano-wallet API.
---
--- The API used in cardano-wallet-jormungandr may differ from this one.
 type Api n apiPool =
          Wallets
     :<|> WalletKeys
@@ -264,6 +268,7 @@ type Api n apiPool =
     :<|> Proxy_
     :<|> Settings
     :<|> SMASH
+    :<|> SharedWallets
 
 {-------------------------------------------------------------------------------
                                   Wallets
@@ -824,6 +829,20 @@ type GetCurrentSMASHHealth = "smash"
     :> "health"
     :> QueryParam "url" (ApiT SmashServer)
     :> Get '[JSON] ApiHealthCheck
+
+{-------------------------------------------------------------------------------
+                                  SharedWallets
+
+  See also: https://input-output-hk.github.io/cardano-wallet/api/#tag/SharedWallets
+-------------------------------------------------------------------------------}
+
+type SharedWallets =
+    PostSharedWallet
+
+-- | https://input-output-hk.github.io/cardano-wallet/api/#operation/postSharedWallet
+type PostSharedWallet = "shared-wallets"
+    :> ReqBody '[JSON] ApiSharedWalletPostData
+    :> PostCreated '[JSON] ApiSharedWallet
 
 {-------------------------------------------------------------------------------
                                    Proxy_
