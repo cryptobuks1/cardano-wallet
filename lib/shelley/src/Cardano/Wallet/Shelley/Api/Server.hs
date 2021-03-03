@@ -230,7 +230,7 @@ server byron icarus shelley spl ntp =
     :<|> proxy
     :<|> settingS
     :<|> smash
-    :<|> shareWallets
+    :<|> sharedWallets
   where
     wallets :: Server Wallets
     wallets = deleteWallet shelley
@@ -490,8 +490,12 @@ server byron icarus shelley spl ntp =
                 FetchSMASH smashServer -> getHealth smashServer
                 _ -> pure (ApiHealthCheck NoSmashConfigured)
 
-    shareWallets :: Server SharedWallets
-    shareWallets = pure $ throwError err501
+    sharedWallets :: Server SharedWallets
+    sharedWallets =
+        postSharedWallet :<|> getSharedWallet
+      where
+         postSharedWallet = pure $ throwError err501
+         getSharedWallet = pure $ throwError err501
 
 postAnyAddress
     :: NetworkId
