@@ -117,6 +117,8 @@ module Cardano.Wallet.Api
       -- * Shelley
     , SharedWallets
         , PostSharedWallet
+        , GetSharedWallet
+        , PatchSharedWallet
 
     , Proxy_
         , PostExternalTransaction
@@ -159,6 +161,7 @@ import Cardano.Wallet.Api.Types
     , ApiPutAddressesDataT
     , ApiSelectCoinsDataT
     , ApiSharedWallet
+    , ApiSharedWalletPatchData
     , ApiSharedWalletPostData
     , ApiT
     , ApiTransactionT
@@ -235,6 +238,7 @@ import Servant.API.Verbs
     ( DeleteAccepted
     , DeleteNoContent
     , Get
+    , Patch
     , Post
     , PostAccepted
     , PostCreated
@@ -839,6 +843,7 @@ type GetCurrentSMASHHealth = "smash"
 type SharedWallets =
          PostSharedWallet
     :<|> GetSharedWallet
+    :<|> PatchSharedWallet
 
 -- | https://input-output-hk.github.io/cardano-wallet/api/#operation/postSharedWallet
 type PostSharedWallet = "shared-wallets"
@@ -850,6 +855,11 @@ type GetSharedWallet = "shared-wallets"
     :> Capture "walletId" (ApiT WalletId)
     :> Get '[JSON] ApiSharedWallet
 
+-- | https://input-output-hk.github.io/cardano-wallet/api/#operation/patchSharedWallet
+type PatchSharedWallet = "shared-wallets"
+    :> Capture "walletId" (ApiT WalletId)
+    :> ReqBody '[JSON] ApiSharedWalletPatchData
+    :> Patch '[JSON] ApiSharedWallet
 {-------------------------------------------------------------------------------
                                    Proxy_
 
