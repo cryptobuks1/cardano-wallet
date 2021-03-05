@@ -73,6 +73,9 @@ module Cardano.Wallet.Shelley.Compatibility
     , toCardanoValue
     , fromCardanoValue
 
+      -- ** Tests
+    , assessTokenBundleSize
+
       -- ** Stake pools
     , fromPoolId
     , fromPoolDistr
@@ -260,6 +263,7 @@ import Type.Reflection
 import qualified Cardano.Address.Style.Shelley as CA
 import qualified Cardano.Api.Shelley as Cardano
 import qualified Cardano.Api.Typed as Cardano
+import qualified Cardano.Binary as Binary
 import qualified Cardano.Byron.Codec.Cbor as CBOR
 import qualified Cardano.Chain.Common as Byron
 import qualified Cardano.Ledger.Core as SL.Core
@@ -1215,6 +1219,33 @@ toStakePoolDlgCert xpub (W.PoolId pid) =
   where
     cred = SL.KeyHash $ UnsafeHash $ toShort $ blake2b224 $ xpubPublicKey xpub
     pool = SL.KeyHash $ UnsafeHash $ toShort pid
+
+{-------------------------------------------------------------------------------
+                                 Tests
+-------------------------------------------------------------------------------}
+
+-- | Assesses a token bundle size in relation to the maximum size that can be
+--   included in a transaction output.
+--
+assessTokenBundleSize :: TokenBundle.TokenBundle -> W.TokenBundleSizeAssessment
+assessTokenBundleSize tb
+    | BS.length serialRepresentation <= serialRepresentationMaxLengthBytes =
+        W.TokenBundleSizeWithinLimit
+    | otherwise =
+        W.TokenBundleSizeExceedsLimit
+  where
+    serialRepresentation :: ByteString
+    serialRepresentation =
+        Binary.serialize' $ Cardano.toMaryValue $ toCardanoValue tb
+
+    -- NOTE: This hard-coded limit may change in future. Ideally, we should
+    -- delegate the assessment of whether a token bundle is too large to a
+    -- function exported by Cardano API.
+    --
+    -- See: https://jira.iohk.io/projects/ADP/issues/ADP-779
+    --
+    serialRepresentationMaxLengthBytes :: Int
+    serialRepresentationMaxLengthBytes = 4096
 
 {-------------------------------------------------------------------------------
                       Address Encoding / Decoding
