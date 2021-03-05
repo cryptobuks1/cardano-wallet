@@ -39,7 +39,7 @@ import Cardano.Wallet.Api.Types
     , pendingSince
     )
 import Cardano.Wallet.Primitive.AddressDerivation
-    ( PaymentAddress )
+    ( PaymentAddress, hex )
 import Cardano.Wallet.Primitive.AddressDerivation.Icarus
     ( IcarusKey )
 import Cardano.Wallet.Primitive.Types
@@ -126,6 +126,8 @@ import Test.Integration.Framework.DSL
     , fixtureRandomWallet
     , fixtureWallet
     , fixtureWalletWith
+    , fixtureWalletWithMnemonics
+    , fixtureWalletWithSeaHorses
     , getFromResponse
     , getTTLSlots
     , getWallet
@@ -698,6 +700,41 @@ spec = describe "SHELLEY_TRANSACTIONS" $ do
         let assetsSrc = wal ^. #assets . #total . #getApiT
         assetsSrc `shouldNotBe` mempty
         let val = minUTxOValue <$ pickAnAsset assetsSrc
+
+        addrs <- listAddresses @n ctx wDest
+        let destination = (addrs !! 1) ^. #id
+        payload <- mkTxPayloadMA @n destination 0 [val] fixturePassphrase
+
+        rtx <- request @(ApiTransaction n) ctx
+            (Link.createTransaction @'Shelley wSrc) Default payload
+        expectResponseCode HTTP.status202 rtx
+
+        eventually "Payee wallet balance is as expected" $ do
+            rb <- request @ApiWallet ctx
+                (Link.getWallet @'Shelley wDest) Default Empty
+            verify rb
+                [ expectField (#assets . #available . #getApiT) (`shouldNotBe` TokenMap.empty)
+                , expectField (#assets . #total . #getApiT) (`shouldNotBe` TokenMap.empty)
+                ]
+    it "TRANS_ASSETS_CREATE_xx - Send SeaHorses" $ \ctx -> runResourceT $ do
+        wSrc <- fixtureWalletWithSeaHorses ctx
+        wDest <- emptyWallet ctx
+        ra <- request @ApiWallet ctx (Link.getWallet @'Shelley wSrc) Default Empty
+        let (_, Right wal) = ra
+
+        -- pick out an asset to send
+        let assetsSrc = wal ^. #assets . #total . #getApiT
+        assetsSrc `shouldNotBe` mempty
+
+        -- We don't have a SeaHorse1
+        --let val =
+        --        (("4ff049585c4b3070563966370f5427d4a2f3588bce4146d57a93c7d3"
+        --        , T.pack . B8.unpack . hex . B8.pack $ "SeaHorse1")
+        --        , 1)
+        --
+
+        liftIO $ print assetsSrc
+        let val = undefined
 
         addrs <- listAddresses @n ctx wDest
         let destination = (addrs !! 1) ^. #id

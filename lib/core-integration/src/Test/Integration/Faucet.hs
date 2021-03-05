@@ -20,6 +20,8 @@ module Test.Integration.Faucet
     , mirMnemonics
     , maMnemonics
 
+    , seaHorseWallet
+
       -- * Integration test funds
     , shelleyIntegrationTestFunds
     , maryIntegrationTestAssets
@@ -93,6 +95,7 @@ import qualified Cardano.Wallet.Primitive.AddressDerivation.Byron as Byron
 import qualified Cardano.Wallet.Primitive.AddressDerivation.Icarus as Icarus
 import qualified Cardano.Wallet.Primitive.AddressDerivation.Shelley as Shelley
 import qualified Cardano.Wallet.Primitive.Types.TokenBundle as TokenBundle
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -2212,13 +2215,21 @@ maryAssetScripts = map (first (unsafeFromText . T.pack))
          , "41d71703500df1cefd3fab37d39c27693a7b156f3fb5d9b25252d7c8" ) )
     ]
 
+-- | A wallet with lots of Sea Horses.
+--
+-- For testing large asset counts.
+seaHorseWallet :: Mnemonic 15
+seaHorseWallet = unsafeMkMnemonic $ T.words
+    "decrease maple prevent regret stem work enjoy circle kid gain vocal \
+    \sleep table vast wrong"
+
 -- | A list of addresses, and assets to be provisioned there.
 --
 -- Beside the assets, there is a list of @(signing key, verification key hash)@,
 -- so that they can be minted by the faucet.
 maryIntegrationTestAssets
     :: [(Address, (TokenBundle, [(String, String)]))]
-maryIntegrationTestAssets = maMnemonics >>= take 3
+maryIntegrationTestAssets = (specialAssets <>) $ maMnemonics >>= take 3
     . flip zip (cycle maryTokenBundles)
     . genShelleyAddresses
     . SomeMnemonic
@@ -2238,6 +2249,20 @@ maryIntegrationTestAssets = maMnemonics >>= take 3
         , (UnsafeTokenName "cherry", TokenQuantity 67_000_000)
         ]
     combined p = simple p `TokenBundle.add` fruit p
+
+    seaHorse is p = bundle p $ flip map is $ \i ->
+        (UnsafeTokenName ("SeaHorse" <> B8.pack (show i)), TokenQuantity 1)
+
+    specialAssets =
+        flip zip (map (\is -> mint (seaHorse is) (maryAssetScripts !! 4)) (chunks 2 [1 .. 200]))
+        . genShelleyAddresses . SomeMnemonic $ seaHorseWallet
+
+-- https://stackoverflow.com/questions/12876384/grouping-a-list-into-lists-of-n-elements-in-haskell
+chunks :: Int -> [a] -> [[a]]
+chunks _ [] = []
+chunks n xs =
+    let (ys, zs) = splitAt n xs
+    in  ys : chunks n zs
 
 --
 -- Helpers

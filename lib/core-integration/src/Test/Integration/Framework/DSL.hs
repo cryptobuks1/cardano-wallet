@@ -111,6 +111,7 @@ module Test.Integration.Framework.DSL
     , fixtureWallet
     , fixtureWalletWith
     , fixtureWalletWithMnemonics
+    , fixtureWalletWithSeaHorses
     , fixtureMultiAssetWallet
     , fixtureMultiAssetRandomWallet
     , fixtureMultiAssetIcarusWallet
@@ -354,7 +355,7 @@ import Test.Hspec.Expectations.Lifted
 import Test.HUnit.Lang
     ( FailureReason (..), HUnitFailure (..) )
 import Test.Integration.Faucet
-    ( NextWallet, nextTxBuilder, nextWallet )
+    ( NextWallet, nextTxBuilder, nextWallet, seaHorseWallet )
 import Test.Integration.Framework.Context
     ( Context (..), TxDescription (..) )
 import Test.Integration.Framework.Request
@@ -1348,6 +1349,39 @@ fixtureWalletWithMnemonics _ ctx = snd <$> allocate create (free . fst)
   where
     create = do
         mnemonics <- mnemonicToText <$> nextWallet @scheme (_faucet ctx)
+        let payload = Json [aesonQQ| {
+                "name": "Faucet Wallet",
+                "mnemonic_sentence": #{mnemonics},
+                "passphrase": #{fixturePassphrase}
+                } |]
+        r <- request @ApiWallet ctx
+            (Link.postWallet @'Shelley) Default payload
+        expectResponseCode HTTP.status201 r
+        let w = getFromResponse id r
+        race (threadDelay sixtySeconds) (checkBalance w) >>= \case
+            Left _ -> expectationFailure'
+                "fixtureWallet: waited too long for initial transaction"
+            Right a -> return (a, mnemonics)
+
+    free w = void $ request @Aeson.Value ctx
+        (Link.deleteWallet @'Shelley w) Default Empty
+    sixtySeconds = 60*oneSecond
+    checkBalance w = do
+        r <- request @ApiWallet ctx
+            (Link.getWallet @'Shelley w) Default Empty
+        if getFromResponse (#balance . #available) r > Quantity 0
+            then return (getFromResponse id r)
+            else threadDelay oneSecond *> checkBalance w
+
+
+fixtureWalletWithSeaHorses
+    :: forall m . (MonadIO m)
+    => Context
+    -> ResourceT m ApiWallet
+fixtureWalletWithSeaHorses ctx = fst . snd <$> allocate create (free . fst)
+  where
+    create = do
+        let mnemonics = mnemonicToText seaHorseWallet
         let payload = Json [aesonQQ| {
                 "name": "Faucet Wallet",
                 "mnemonic_sentence": #{mnemonics},
