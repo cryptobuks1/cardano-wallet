@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{- HLINT ignore "Use camelCase" -}
 
 module Cardano.Wallet.Primitive.Types.TokenBundleSpec
     ( spec

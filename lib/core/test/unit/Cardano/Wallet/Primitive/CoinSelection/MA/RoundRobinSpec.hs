@@ -2033,7 +2033,7 @@ prop_splitBundleIfAssetCountExcessive_length
         cover 5 (resultLength >= 2 && resultLength < 8)
             "length >= 2 && length < 8" $
         cover 5 (resultLength >= 8 && resultLength < 16)
-            "length >= 8 && length < 16" $
+            "length >= 8 && length < 16"
         True
   where
     isExcessive = (> maxAssetCount) . Set.size . TokenBundle.getAssets

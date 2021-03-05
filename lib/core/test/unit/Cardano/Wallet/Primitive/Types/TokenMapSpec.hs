@@ -3,8 +3,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{- HLINT ignore "Use camelCase" -}
 
 module Cardano.Wallet.Primitive.Types.TokenMapSpec
     ( spec
@@ -564,7 +564,7 @@ prop_equipartitionAssets_coverage m = checkCoverage $
     cover 20 (2 <= assetCount && assetCount <= 31)
         "2 <= asset count <= 31" $
     cover 20 (32 <= assetCount && assetCount <= 63)
-        "32 <= asset count <= 63" $
+        "32 <= asset count <= 63"
     True
   where
     assetCount = Set.size $ TokenMap.getAssets $ getLarge $ getBlind m
